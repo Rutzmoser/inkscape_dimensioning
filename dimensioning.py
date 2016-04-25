@@ -28,10 +28,6 @@ import simplestyle
 import numpy as np
 import gettext
 _ = gettext.gettext
-# Unit-conversion does not seem to be implemented in the new inkscape 0.91
-# thus the uuconv-dictionary is updated here
-uuconv = {'in':90.0, 'pt':1.25, 'px':1, 'mm':3.5433070866, 'cm':35.433070866, 'm':3543.3070866, 
-      'km':3543307.0866, 'pc':15.0, 'yd':3240 , 'ft':1080}
 
 def norm(a):
     return a/np.sqrt(np.dot(a, a))
@@ -122,7 +118,12 @@ class Dimensioning(inkex.Effect):
                                inkex.addNS('label','inkscape') : 'dimline',
                                'd' : 'm 0,0 200,0'
                                }
-                               
+    def getUnittouu(self, param):
+        try:
+            return inkex.unittouu(param)
+        except AttributeError:
+            return self.unittouu(param)
+
     def effect(self):
         # will be executed when feature is activated
         self.makeGroup()
@@ -262,7 +263,7 @@ class Dimensioning(inkex.Effect):
         else:
             textpoint = (self.a + self.b)/2 + self.e2*self.textdistance
         
-        value = np.abs(np.dot(self.e1, self.b - self.a))/(uuconv[self.options.unit]*self.options.scale_factor)
+        value = np.abs(np.dot(self.e1, self.b - self.a)) / (self.getUnittouu(str(self.options.scale_factor)+self.options.unit))
         string_value = str(round(value, self.options.digit))
         # chop off last characters if digit is zero or negative 
         if self.options.digit <=0:
