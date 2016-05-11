@@ -187,22 +187,55 @@ class Dimensioning(inkex.Effect):
                 
                     
     def calcab(self):
-        delta = self.p2 - self.p1
+        # get p1,p2 ordered for correct dimension direction
+        # determine quadrant
+        if self.p1[0] <= self.p2[0]:
+            if self.p1[1] <= self.p2[1]: 
+                quad = 1 # p1 is left,up of p2
+            else:  quad = 2 # p1 is left,down of p2
+        elif self.p1[1] <= self.p2[1]:
+            quad = 3 # p1 is right,up of p2
+        else: quad = 4 # p1 is right,down of p2
+        swap = False if quad ==1 else True
+        minp = self.p2 if swap else self.p1
+        maxp = self.p1 if swap else self.p2
+        # distance between points
+        delta = maxp - minp
         # rotation matrix
         rotateMat = np.array([[0,-1],[1,0]])
         # compute the unit vectors e1 and e2 along the cartesian coordinates of the dimension
         if self.options.orientation == 'horizontal':
-            self.e1 = np.array([1.0, 0.0])        
+            if quad == 3: self.e1 = np.array([1.0, 0.0])
+            else: self.e1 = np.array([-1.0, 0.0])
         if self.options.orientation == 'vertical':
-            self.e1 = np.array([0.0, 1.0])
+            if quad == 2: 
+                self.e1 = np.array([0.0, -1.0])
+            else: self.e1 = np.array([0.0, 1.0])
         if self.options.orientation == 'parallel':
-            self.e1 = norm(delta)  
+            self.e1 = norm(delta)
+            #if quad==2 or quad==3: self.e1 *= -1
         self.e2 = np.dot(rotateMat, self.e1)
         if self.options.flip:
             self.e2 *= -1.
         # compute the points a and b, where the dimension line arrow spikes start and end
-        self.a = self.p1 + self.options.position*self.e2
-        self.b = self.a + self.e1*np.dot(self.e1,delta)
+        dist = self.options.position*self.e2
+        if self.options.flip:
+            outpt = maxp
+            delta *= -1
+            if swap:
+                self.a = outpt + dist
+                self.b = self.a + self.e1*np.dot(self.e1,delta)
+            else:
+                self.b = outpt + dist
+                self.a = self.b + self.e1*np.dot(self.e1,delta)
+        else: 
+            outpt = minp
+            if swap:
+                self.b = outpt + dist
+                self.a = self.b + self.e1*np.dot(self.e1,delta)
+            else:
+                self.a = outpt + dist
+                self.b = self.a + self.e1*np.dot(self.e1,delta)
                 
         
     def drawHelpline(self):
