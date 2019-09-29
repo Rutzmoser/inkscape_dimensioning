@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 '''
 Tool for drawing beautiful DIN-conform dimensioning arrows
@@ -12,13 +12,13 @@ $HOME/.config/inkscape/extensions/
 
 Mac OS X (when using the binary):
 /Applications/Inkscape.app/Contents/Resources/extensions/
-or 
+or
 /Applications/Inkscape.app/Contents/Resources/share/inkscape/extensions
 
-WINDOWS (Filepath may differ, depending where the program was installed): 
+WINDOWS (Filepath may differ, depending where the program was installed):
 C:\Program Files\Inkscape\share\extensions
 
-License: 
+License:
 GNU GENERAL PUBLIC LICENSE
 
 '''
@@ -38,20 +38,24 @@ def rotate(tangentvec, point):
     else:
         angle = np.arctan(tangentvec[1]/tangentvec[0])
     return 'rotate(' + str(angle/np.pi*180) + ',' + str(point[0]) + ',' + str(point[1]) + ')'
-    
+
 
 class Dimensioning(inkex.Effect):
     def __init__(self):
         inkex.Effect.__init__(self)
         # the options given in the dialouge
         self.OptionParser.add_option("--orientation",
-                        action="store", type="string", 
+                        action="store", type="string",
                         dest="orientation", default='horizontal',
                         help="The type of orientation of the dimensioning (horizontal, vertical or parallel)")
         self.OptionParser.add_option("--arrow_orientation",
-                        action="store", type="string", 
+                        action="store", type="string",
                         dest="arrow_orientation", default='auto',
                         help="The type of orientation of the arrows")
+        self.OptionParser.add_option("--line_scale",
+                        action="store", type="float",
+                        dest="line_scale", default=1.0,
+                        help="Scale factor for the line thickness")
         self.OptionParser.add_option("--overlap",
                         action="store", type="float",
                         dest="overlap", default=1.0,
@@ -73,29 +77,34 @@ class Dimensioning(inkex.Effect):
                         dest="scale_factor", default=1.0,
                         help="scale factor for the dimensioning text")
         self.OptionParser.add_option("--unit",
-                        action="store", type="string", 
+                        action="store", type="string",
                         dest="unit", default='px',
                         help="The unit that should be used for the dimensioning")
         self.OptionParser.add_option("--rotate",
-                        action="store", type="inkbool", 
+                        action="store", type="inkbool",
                         dest="rotate", default=True,
                         help="Rotate the annotation?")
         self.OptionParser.add_option("--digit",
-                        action="store", type="int", 
+                        action="store", type="int",
                         dest="digit", default=0,
                         help="number of digits after the point")
         self.OptionParser.add_option("--tab",
-                        action="store", type="string", 
+                        action="store", type="string",
                         dest="tab", default="sampling",
                         help="The selected UI-tab when OK was pressed")
+    def create_linestyles(self):
+        '''
+        Create the line styles for the drawings.
+        '''
+
         self.helpline_style = {
                         'stroke'        : '#000000',
-                        'stroke-width'  : '0.5px',
+                        'stroke-width'  : '{}px'.format(0.5*self.options.line_scale),
                         'fill'          : 'none'
                         }
         self.dimline_style = {
                         'stroke'        : '#000000',
-                        'stroke-width'  : '0.75px',
+                        'stroke-width'  : '{}px'.format(0.75*self.options.line_scale),
                         'fill'          : 'none',
                         'marker-start'  : 'url(#ArrowDIN-start)',
                         'marker-end'    : 'url(#ArrowDIN-end)'
@@ -118,6 +127,7 @@ class Dimensioning(inkex.Effect):
                                inkex.addNS('label','inkscape') : 'dimline',
                                'd' : 'm 0,0 200,0'
                                }
+
     def getUnittouu(self, param):
         try:
             return inkex.unittouu(param)
@@ -126,13 +136,14 @@ class Dimensioning(inkex.Effect):
 
     def effect(self):
         # will be executed when feature is activated
+        self.create_linestyles()
         self.makeGroup()
         self.getPoints()
         self.calcab()
         self.drawHelpline()
         self.drawDimension()
-        self.drawText()        
-        
+        self.drawText()
+
     def makeMarkerstyle(self, name, rotate):
         defs = self.xpathSingle('/svg:svg//svg:defs')
         if defs == None:
@@ -157,19 +168,19 @@ class Dimensioning(inkex.Effect):
                 arrow.set('d', 'M 0,0 16,2.11 16,0.5 26,0.5 26,-0.5 16,-0.5 16,-2.11 z')
             else:
                 arrow.set('d', 'M 0,0 -16,2.11 -16,0.5 -26,0.5 -26,-0.5 -16,-0.5 -16,-2.11 z')
-        
+
         arrow.set('style', 'fill:#000000;stroke:none')
         marker.append(arrow)
-        
-        
+
+
     def makeGroup(self):
         '''puts everything of the dimensioning in a group'''
-        layer = self.current_layer        
+        layer = self.current_layer
         # Group in which the object should be put into
         grp_name = 'dimensioning'
         grp_attributes = {inkex.addNS('label', 'inkscape') :  grp_name}
         self.grp = inkex.etree.SubElement(layer, 'g', grp_attributes)
-        
+
     def getPoints(self):
         self.p1 = np.array([0.,100.])
         self.p1 = np.array([100.,100.])
@@ -184,13 +195,13 @@ class Dimensioning(inkex.Effect):
                 # the points are lists with x and y coordinate
                 self.p1 = np.array(p[0][0][1])
                 self.p2 = np.array(p[0][-1][1])
-                
-                    
+
+
     def calcab(self):
         # get p1,p2 ordered for correct dimension direction
         # determine quadrant
         if self.p1[0] <= self.p2[0]:
-            if self.p1[1] <= self.p2[1]: 
+            if self.p1[1] <= self.p2[1]:
                 quad = 1 # p1 is left,up of p2
             else:  quad = 2 # p1 is left,down of p2
         elif self.p1[1] <= self.p2[1]:
@@ -208,7 +219,7 @@ class Dimensioning(inkex.Effect):
             if quad == 3: self.e1 = np.array([1.0, 0.0])
             else: self.e1 = np.array([-1.0, 0.0])
         if self.options.orientation == 'vertical':
-            if quad == 2: 
+            if quad == 2:
                 self.e1 = np.array([0.0, -1.0])
             else: self.e1 = np.array([0.0, 1.0])
         if self.options.orientation == 'parallel':
@@ -228,7 +239,7 @@ class Dimensioning(inkex.Effect):
             else:
                 self.b = outpt + dist
                 self.a = self.b + self.e1*np.dot(self.e1,delta)
-        else: 
+        else:
             outpt = minp
             if swap:
                 self.b = outpt + dist
@@ -236,26 +247,26 @@ class Dimensioning(inkex.Effect):
             else:
                 self.a = outpt + dist
                 self.b = self.a + self.e1*np.dot(self.e1,delta)
-                
-        
+
+
     def drawHelpline(self):
         # manipulate the start- and endpoints with distance and overlap
         h1_start = self.p1 + norm(self.a - self.p1)*self.options.distance
         h1_end = self.a + norm(self.a - self.p1)*self.options.overlap
         h2_start = self.p2 + norm(self.b - self.p2)*self.options.distance
         h2_end = self.b + norm(self.b - self.p2)*self.options.overlap
-        
+
         # print the lines
         hline1 = inkex.etree.SubElement(self.grp, inkex.addNS('path', 'svg'), self.helpline_attribs)
         hline1.set('d', 'M %f,%f %f,%f' % (h1_start[0], h1_start[1],h1_end[0],h1_end[1],))
-        
+
         hline2 = inkex.etree.SubElement(self.grp, inkex.addNS('path', 'svg'), self.helpline_attribs)
         hline2.set('d', 'M %f,%f %f,%f' % (h2_start[0], h2_start[1],h2_end[0],h2_end[1],))
-        
+
     def setMarker(self, option):
         if option=='inside':
             # inside
-            self.arrowlen = 6.0
+            self.arrowlen = 6.0 * self.options.line_scale
             self.dimline_style['marker-start'] = 'url(#ArrowDIN-start)'
             self.dimline_style['marker-end'] = 'url(#ArrowDIN-end)'
             self.makeMarkerstyle('ArrowDIN-start', False)
@@ -268,10 +279,10 @@ class Dimensioning(inkex.Effect):
             self.makeMarkerstyle('ArrowDINout-start', False)
             self.makeMarkerstyle('ArrowDINout-end', True)
         self.dimline_attribs['style'] = simplestyle.formatStyle(self.dimline_style)
-        
+
     def drawDimension(self):
         # critical length, when inside snaps to outside
-        critical_length = 35.
+        critical_length = 35 * self.options.line_scale
         if self.options.arrow_orientation == 'auto':
             if np.abs(np.dot(self.e1, self.b - self.a)) > critical_length:
                 self.setMarker('inside')
@@ -285,7 +296,7 @@ class Dimensioning(inkex.Effect):
         # print
         dimline = inkex.etree.SubElement(self.grp, inkex.addNS('path', 'svg'), self.dimline_attribs)
         dimline.set('d', 'M %f,%f %f,%f' % (dim_start[0], dim_start[1], dim_end[0], dim_end[1]))
-        
+
     def drawText(self):
         # distance of text to the dimension line
         self.textdistance = 5.0
@@ -295,10 +306,10 @@ class Dimensioning(inkex.Effect):
             textpoint = (self.a + self.b)/2 - np.array([1,0])*self.textdistance
         else:
             textpoint = (self.a + self.b)/2 + self.e2*self.textdistance
-        
+
         value = np.abs(np.dot(self.e1, self.b - self.a)) / (self.getUnittouu(str(self.options.scale_factor)+self.options.unit))
         string_value = str(round(value, self.options.digit))
-        # chop off last characters if digit is zero or negative 
+        # chop off last characters if digit is zero or negative
         if self.options.digit <=0:
             string_value = string_value[:-2]
         text = inkex.etree.SubElement(self.grp, inkex.addNS('text', 'svg'), self.text_attribs)
@@ -309,7 +320,7 @@ class Dimensioning(inkex.Effect):
         text.set('y', str(textpoint[1]))
         if self.options.rotate:
             text.set('transform', rotate(self.e1, textpoint))
-    
+
 # call the object function
 if __name__ == '__main__':
     a = Dimensioning()
