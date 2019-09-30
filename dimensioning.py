@@ -110,7 +110,7 @@ class Dimensioning(inkex.Effect):
                         'marker-end'    : 'url(#ArrowDIN-end)'
                         }
         self.text_style = {
-                        'font-size'     : '12px',
+                        'font-size'     : '{}px'.format(12*self.options.line_scale),
                         'font-family'   : 'Sans',
                         'font-style'    : 'normal',
                         'text-anchor'   : 'middle'
@@ -299,7 +299,7 @@ class Dimensioning(inkex.Effect):
 
     def drawText(self):
         # distance of text to the dimension line
-        self.textdistance = 5.0
+        self.textdistance = 5.0 * self.options.line_scale
         if self.e2[1] > 0:
             textpoint = (self.a + self.b)/2 - self.e2*self.textdistance
         elif self.e2[1] == 0:
