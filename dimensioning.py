@@ -23,11 +23,13 @@ GNU GENERAL PUBLIC LICENSE
 
 '''
 
-import inkex, cubicsuperpath
+import inkex
 import simplestyle
 import numpy as np
 import gettext
 _ = gettext.gettext
+from lxml import etree
+from inkex import paths
 
 def norm(a):
     return a/np.sqrt(np.dot(a, a))
@@ -44,52 +46,52 @@ class Dimensioning(inkex.Effect):
     def __init__(self):
         inkex.Effect.__init__(self)
         # the options given in the dialouge
-        self.OptionParser.add_option("--orientation",
-                        action="store", type="string",
+        self.arg_parser.add_argument("--orientation",
+                        action="store", type=str,
                         dest="orientation", default='horizontal',
                         help="The type of orientation of the dimensioning (horizontal, vertical or parallel)")
-        self.OptionParser.add_option("--arrow_orientation",
-                        action="store", type="string",
+        self.arg_parser.add_argument("--arrow_orientation",
+                        action="store", type=str,
                         dest="arrow_orientation", default='auto',
                         help="The type of orientation of the arrows")
-        self.OptionParser.add_option("--line_scale",
-                        action="store", type="float",
+        self.arg_parser.add_argument("--line_scale",
+                        action="store", type=float,
                         dest="line_scale", default=1.0,
                         help="Scale factor for the line thickness")
-        self.OptionParser.add_option("--overlap",
-                        action="store", type="float",
+        self.arg_parser.add_argument("--overlap",
+                        action="store", type=float,
                         dest="overlap", default=1.0,
                         help="Overlap of the helpline over the dimensioning line")
-        self.OptionParser.add_option("--distance",
-                        action="store", type="float",
+        self.arg_parser.add_argument("--distance",
+                        action="store", type=float,
                         dest="distance", default=1.0,
                         help="Distance of the helpline to the object")
-        self.OptionParser.add_option("--position",
-                        action="store", type="float",
+        self.arg_parser.add_argument("--position",
+                        action="store", type=float,
                         dest="position", default=1.0,
                         help="position of the dimensioning line")
-        self.OptionParser.add_option("--flip",
-                        action="store", type="inkbool",
+        self.arg_parser.add_argument("--flip",
+                        action="store", type=inkex.Boolean,
                         dest="flip", default=False,
                         help="flip side")
-        self.OptionParser.add_option("--scale_factor",
-                        action="store", type="float",
+        self.arg_parser.add_argument("--scale_factor",
+                        action="store", type=float,
                         dest="scale_factor", default=1.0,
                         help="scale factor for the dimensioning text")
-        self.OptionParser.add_option("--unit",
-                        action="store", type="string",
+        self.arg_parser.add_argument("--unit",
+                        action="store", type=str,
                         dest="unit", default='px',
                         help="The unit that should be used for the dimensioning")
-        self.OptionParser.add_option("--rotate",
-                        action="store", type="inkbool",
+        self.arg_parser.add_argument("--rotate",
+                        action="store", type=inkex.Boolean,
                         dest="rotate", default=True,
                         help="Rotate the annotation?")
-        self.OptionParser.add_option("--digit",
-                        action="store", type="int",
+        self.arg_parser.add_argument("--digit",
+                        action="store", type=int,
                         dest="digit", default=0,
                         help="number of digits after the point")
-        self.OptionParser.add_option("--tab",
-                        action="store", type="string",
+        self.arg_parser.add_argument("--tab",
+                        action="store", type=str,
                         dest="tab", default="sampling",
                         help="The selected UI-tab when OK was pressed")
     def create_linestyles(self):
@@ -115,22 +117,22 @@ class Dimensioning(inkex.Effect):
                         'font-style'    : 'normal',
                         'text-anchor'   : 'middle'
                         }
-        self.helpline_attribs = {'style' : simplestyle.formatStyle(self.helpline_style),
+        self.helpline_attribs = {'style' : str(inkex.Style(self.helpline_style)),
                                    inkex.addNS('label', 'inkscape') : 'helpline',
                                    'd' : 'm 0,0 100,0'
                                  }
-        self.text_attribs = {'style'     : simplestyle.formatStyle(self.text_style),
+        self.text_attribs = {'style'     : str(inkex.Style(self.text_style)),
                              'x'         : '100',
                              'y'         : '100'
                              }
-        self.dimline_attribs = {'style'  : simplestyle.formatStyle(self.dimline_style),
+        self.dimline_attribs = {'style'  : str(inkex.Style(self.dimline_style)),
                                inkex.addNS('label','inkscape') : 'dimline',
                                'd' : 'm 0,0 200,0'
                                }
 
     def getUnittouu(self, param):
         try:
-            return inkex.unittouu(param)
+            return self.svg.unittouu(param)
         except AttributeError:
             return self.unittouu(param)
 
@@ -145,10 +147,10 @@ class Dimensioning(inkex.Effect):
         self.drawText()
 
     def makeMarkerstyle(self, name, rotate):
-        defs = self.xpathSingle('/svg:svg//svg:defs')
+        defs = self.svg.getElement('/svg:svg//svg:defs')
         if defs == None:
-            defs = inkex.etree.SubElement(self.document.getroot(),inkex.addNS('defs','svg'))
-        marker = inkex.etree.SubElement(defs ,inkex.addNS('marker','svg'))
+            defs = etree.SubElement(self.document.getroot(),inkex.addNS('defs','svg'))
+        marker = etree.SubElement(defs ,inkex.addNS('marker','svg'))
         marker.set('id', name)
         marker.set('orient', 'auto')
         marker.set('refX', '0.0')
@@ -156,7 +158,7 @@ class Dimensioning(inkex.Effect):
         marker.set('style', 'overflow:visible')
         marker.set(inkex.addNS('stockid','inkscape'), name)
 
-        arrow = inkex.etree.Element("path")
+        arrow = etree.Element("path")
         # messy but works; definition of arrows in beautiful DIN-shapes:
         if name.startswith('ArrowDIN-'):
             if rotate:
@@ -175,21 +177,21 @@ class Dimensioning(inkex.Effect):
 
     def makeGroup(self):
         '''puts everything of the dimensioning in a group'''
-        layer = self.current_layer
+        layer = self.svg.get_current_layer()
         # Group in which the object should be put into
         grp_name = 'dimensioning'
         grp_attributes = {inkex.addNS('label', 'inkscape') :  grp_name}
-        self.grp = inkex.etree.SubElement(layer, 'g', grp_attributes)
+        self.grp = etree.SubElement(layer, 'g', grp_attributes)
 
     def getPoints(self):
         self.p1 = np.array([0.,100.])
         self.p1 = np.array([100.,100.])
         # Get variables of a selected object
-        for id, node in self.selected.iteritems():
+        for id, node in self.svg.selected.items():
             # if it is a path:
             if node.tag == inkex.addNS('path', 'svg'):
                 d = node.get('d')
-                p = cubicsuperpath.parsePath(d)
+                p = paths.CubicSuperPath(d)
                 # p has all nodes with the anchor points in a list;
                 # the rule is [anchorpoint, node, anchorpoint]
                 # the points are lists with x and y coordinate
@@ -257,10 +259,10 @@ class Dimensioning(inkex.Effect):
         h2_end = self.b + norm(self.b - self.p2)*self.options.overlap
 
         # print the lines
-        hline1 = inkex.etree.SubElement(self.grp, inkex.addNS('path', 'svg'), self.helpline_attribs)
+        hline1 = etree.SubElement(self.grp, inkex.addNS('path', 'svg'), self.helpline_attribs)
         hline1.set('d', 'M %f,%f %f,%f' % (h1_start[0], h1_start[1],h1_end[0],h1_end[1],))
 
-        hline2 = inkex.etree.SubElement(self.grp, inkex.addNS('path', 'svg'), self.helpline_attribs)
+        hline2 = etree.SubElement(self.grp, inkex.addNS('path', 'svg'), self.helpline_attribs)
         hline2.set('d', 'M %f,%f %f,%f' % (h2_start[0], h2_start[1],h2_end[0],h2_end[1],))
 
     def setMarker(self, option):
@@ -278,7 +280,7 @@ class Dimensioning(inkex.Effect):
             self.dimline_style['marker-end'] = 'url(#ArrowDINout-end)'
             self.makeMarkerstyle('ArrowDINout-start', False)
             self.makeMarkerstyle('ArrowDINout-end', True)
-        self.dimline_attribs['style'] = simplestyle.formatStyle(self.dimline_style)
+        self.dimline_attribs['style'] = str(inkex.Style(self.dimline_style))
 
     def drawDimension(self):
         # critical length, when inside snaps to outside
@@ -294,7 +296,7 @@ class Dimensioning(inkex.Effect):
         dim_start = self.a + self.arrowlen*norm(self.b - self.a)
         dim_end = self.b - self.arrowlen*norm(self.b - self.a)
         # print
-        dimline = inkex.etree.SubElement(self.grp, inkex.addNS('path', 'svg'), self.dimline_attribs)
+        dimline = etree.SubElement(self.grp, inkex.addNS('path', 'svg'), self.dimline_attribs)
         dimline.set('d', 'M %f,%f %f,%f' % (dim_start[0], dim_start[1], dim_end[0], dim_end[1]))
 
     def drawText(self):
@@ -312,7 +314,7 @@ class Dimensioning(inkex.Effect):
         # chop off last characters if digit is zero or negative
         if self.options.digit <=0:
             string_value = string_value[:-2]
-        text = inkex.etree.SubElement(self.grp, inkex.addNS('text', 'svg'), self.text_attribs)
+        text = etree.SubElement(self.grp, inkex.addNS('text', 'svg'), self.text_attribs)
         # The alternative for framing with dollars, when LATEX Math export is seeked
         # text.text = '$' + string_value + '$'
         text.text = string_value
@@ -324,4 +326,4 @@ class Dimensioning(inkex.Effect):
 # call the object function
 if __name__ == '__main__':
     a = Dimensioning()
-    a.affect()
+    a.run()
