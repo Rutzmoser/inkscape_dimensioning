@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 '''
 Tool for drawing beautiful DIN-conform dimensioning arrows
 (c) 2012 by Johannes B. Rutzmoser, johannes.rutzmoser (at) googlemail (dot) com
@@ -24,7 +23,6 @@ GNU GENERAL PUBLIC LICENSE
 '''
 
 import inkex
-import simplestyle
 import numpy as np
 import gettext
 _ = gettext.gettext
@@ -46,54 +44,18 @@ class Dimensioning(inkex.Effect):
     def __init__(self):
         inkex.Effect.__init__(self)
         # the options given in the dialouge
-        self.arg_parser.add_argument("--orientation",
-                        action="store", type=str,
-                        dest="orientation", default='horizontal',
-                        help="The type of orientation of the dimensioning (horizontal, vertical or parallel)")
-        self.arg_parser.add_argument("--arrow_orientation",
-                        action="store", type=str,
-                        dest="arrow_orientation", default='auto',
-                        help="The type of orientation of the arrows")
-        self.arg_parser.add_argument("--line_scale",
-                        action="store", type=float,
-                        dest="line_scale", default=1.0,
-                        help="Scale factor for the line thickness")
-        self.arg_parser.add_argument("--overlap",
-                        action="store", type=float,
-                        dest="overlap", default=1.0,
-                        help="Overlap of the helpline over the dimensioning line")
-        self.arg_parser.add_argument("--distance",
-                        action="store", type=float,
-                        dest="distance", default=1.0,
-                        help="Distance of the helpline to the object")
-        self.arg_parser.add_argument("--position",
-                        action="store", type=float,
-                        dest="position", default=1.0,
-                        help="position of the dimensioning line")
-        self.arg_parser.add_argument("--flip",
-                        action="store", type=inkex.Boolean,
-                        dest="flip", default=False,
-                        help="flip side")
-        self.arg_parser.add_argument("--scale_factor",
-                        action="store", type=float,
-                        dest="scale_factor", default=1.0,
-                        help="scale factor for the dimensioning text")
-        self.arg_parser.add_argument("--unit",
-                        action="store", type=str,
-                        dest="unit", default='px',
-                        help="The unit that should be used for the dimensioning")
-        self.arg_parser.add_argument("--rotate",
-                        action="store", type=inkex.Boolean,
-                        dest="rotate", default=True,
-                        help="Rotate the annotation?")
-        self.arg_parser.add_argument("--digit",
-                        action="store", type=int,
-                        dest="digit", default=0,
-                        help="number of digits after the point")
-        self.arg_parser.add_argument("--tab",
-                        action="store", type=str,
-                        dest="tab", default="sampling",
-                        help="The selected UI-tab when OK was pressed")
+        self.arg_parser.add_argument("--orientation",  default='horizontal', help="The type of orientation of the dimensioning (horizontal, vertical or parallel)")
+        self.arg_parser.add_argument("--arrow_orientation", default='auto',  help="The type of orientation of the arrows")
+        self.arg_parser.add_argument("--line_scale", type=float, default=1.0,  help="Scale factor for the line thickness")
+        self.arg_parser.add_argument("--overlap", type=float, default=1.0, help="Overlap of the helpline over the dimensioning line")
+        self.arg_parser.add_argument("--distance", type=float, default=1.0, help="Distance of the helpline to the object")
+        self.arg_parser.add_argument("--position", type=float, default=1.0, help="position of the dimensioning line")
+        self.arg_parser.add_argument("--flip",  type=inkex.Boolean, default=False, help="flip side")
+        self.arg_parser.add_argument("--scale_factor", type=float, default=1.0, help="scale factor for the dimensioning text")
+        self.arg_parser.add_argument("--unit", default='px', help="The unit that should be used for the dimensioning")
+        self.arg_parser.add_argument("--rotate", type=inkex.Boolean,  default=True, help="Rotate the annotation?")
+        self.arg_parser.add_argument("--digit", type=int, default=0, help="number of digits after the point")
+        self.arg_parser.add_argument("--tab", default="sampling", help="The selected UI-tab when OK was pressed")
     def create_linestyles(self):
         '''
         Create the line styles for the drawings.
@@ -129,12 +91,6 @@ class Dimensioning(inkex.Effect):
                                inkex.addNS('label','inkscape') : 'dimline',
                                'd' : 'm 0,0 200,0'
                                }
-
-    def getUnittouu(self, param):
-        try:
-            return self.svg.unittouu(param)
-        except AttributeError:
-            return self.unittouu(param)
 
     def effect(self):
         # will be executed when feature is activated
@@ -309,7 +265,7 @@ class Dimensioning(inkex.Effect):
         else:
             textpoint = (self.a + self.b)/2 + self.e2*self.textdistance
 
-        value = np.abs(np.dot(self.e1, self.b - self.a)) / (self.getUnittouu(str(self.options.scale_factor)+self.options.unit))
+        value = np.abs(np.dot(self.e1, self.b - self.a)) / (self.svg.unittouu(str(self.options.scale_factor)+self.options.unit))
         string_value = str(round(value, self.options.digit))
         # chop off last characters if digit is zero or negative
         if self.options.digit <=0:
@@ -323,7 +279,5 @@ class Dimensioning(inkex.Effect):
         if self.options.rotate:
             text.set('transform', rotate(self.e1, textpoint))
 
-# call the object function
 if __name__ == '__main__':
-    a = Dimensioning()
-    a.run()
+    Dimensioning().run()
