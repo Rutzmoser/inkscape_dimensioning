@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
     <_name>Dimensioning</_name>
-    <id>MyIdea</id>
+    <id>dimensioning</id>
 	<dependency type="executable" location="extensions">pathmodifier.py</dependency>
 	<dependency type="executable" location="extensions">inkex.py</dependency>
-
-
 	<param name="tab" type="notebook">
 	  	<page name="general" _gui-text="General Settings">
 	  		<param name="orientation" type="optiongroup" _gui-text="Orientation">
@@ -22,10 +20,9 @@
 	  		<param name="overlap" type="float" _gui-text="Helpline overlap:"  min="0" max="30">5</param>
 	  		<param name="distance" type="float" _gui-text="Helpline distance:"  min="0" max="50">0</param>
 	  		<param name="position" type="float" _gui-text="Position:"  min="-1000" max="1000">100</param>
-	  		<object-type>path</object-type>
-	  		<param name="flip" type="boolean" _gui-text="Flip side:">0</param>
+	  		<param name="flip" type="boolean" _gui-text="Flip side:">false</param>
 	    </page>
-    	<page name="textfield" _gui-text="Annotation">
+    	<page name="annotation" _gui-text="Annotation">
     		<param name="scale_factor" type="float" _gui-text="Scalefactor (1:#):"  min="0" max="10000">1</param>
     		<param name="unit" type="enum" _gui-text="Units">
     	  		<_item value="px">px</_item>
@@ -43,17 +40,18 @@
     	     	<_item value="2">two digits - 11.11</_item>
     	  		<_item value="3">three digits - 11.111</_item>
     	  	</param> -->
-    		<param name="rotate" type="boolean" _gui-text="Rotate Annotation">1</param>
+    		<param name="rotate" type="boolean" _gui-text="Rotate Annotation">true</param>
     	</page>
-    	<page name="textfield" _gui-text="Help">
+    	<page name="help" _gui-text="Help">
     		<param name="some_name" type="description">This tool draws beautiful DIN-Style dimensioning arrows.
     		Draw a path. The dimensioning will go from the start point to the end point of the path.
     		</param>
     	</page>
 	</param>
 	  <effect>
+		<object-type>path</object-type>
 	  	<effects-menu>
-	  		<submenu _name="Generate from Path"/>
+                	<submenu _name="Dimensioning/Measuring" />
 	  	</effects-menu>
 	   </effect>
     <script>
